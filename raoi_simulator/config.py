@@ -283,11 +283,45 @@ Peso del sesgo de "bordeo" al ser repelido por una parcela (0-1).
 Cuando la repulsion viene (al menos en parte) de una parcela, se mezcla el
 vector de repulsion puro con una componente tangencial (perpendicular a la
 repulsion, en la direccion mas alineada con el heading actual del robot),
-en vez de solo alejarse en linea recta. 0 = comportamiento anterior (solo
-aleja); 1 = solo tangencial (bordea sin alejarse). 0.4 prioriza alejarse
-un poco pero favorece recorrer el borde de la parcela en vez de rebotar
-y quedar dando vueltas cerca del mismo punto — util porque la parcela es
-un obstaculo alargado (75 m), no puntual.
+en vez de solo alejarse en linea recta. 0 = solo repulsion pura (se aleja
+sin bordear); 1 = solo tangencial (bordea sin alejarse). 0.4 prioriza
+alejarse un poco pero favorece recorrer el borde de la parcela en vez de
+rebotar y quedar dando vueltas cerca del mismo punto — util porque la
+parcela es un obstaculo alargado (75 m), no puntual.
+"""
+
+FARMING_SENSOR_ANGLE_NOISE_STD: float = 0.03
+"""
+Desviacion estandar del ruido gaussiano en el angulo percibido hacia un
+objetivo (nest u objeto), en radianes. ~1.7 grados — ruido de sensor sutil.
+
+Modela la imprecision de un sensor real: el robot no percibe la direccion
+exacta hacia lo que detecta. Se aplica en _detect_influence_farming, sobre
+el angulo real antes de usarlo para dirigir el movimiento. 0 desactiva
+este ruido.
+"""
+
+FARMING_SENSOR_DISTANCE_NOISE_STD: float = 0.03
+"""
+Desviacion estandar del ruido gaussiano en la distancia percibida hacia un
+objetivo (nest u objeto), en metros. Ruido de sensor sutil.
+
+Se aplica sobre la distancia real antes de compararla contra el radio de
+deteccion (el borde de deteccion queda "difuso" en vez de un corte
+perfecto) y antes de usarla para escalar el voltaje por cercania. 0
+desactiva este ruido.
+"""
+
+FARMING_ACTUATOR_NOISE_STD: float = 0.03
+"""
+Desviacion estandar del ruido gaussiano blanco anadido al voltaje base de
+cada rueda (V), antes de la correccion de giro. Ruido de actuador sutil
+frente a los voltajes de referencia (~2.0-3.7 V).
+
+Modela la imprecision de un motor/controlador real: el voltaje que
+realmente llega a la rueda no es exactamente el comandado. Se aplica en
+cada iteracion, por robot, en el parametro 'noise' de behavior.select_voltage.
+0 desactiva este ruido.
 """
 
 # ── Spawn inicial ────────────────────────────────────────────────────────────

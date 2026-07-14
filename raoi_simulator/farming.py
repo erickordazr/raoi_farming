@@ -268,6 +268,13 @@ def _detect_influence_farming(
     R); aqui solo actuan como bloqueadoras de vision cuando estan
     literalmente entre el robot y el objetivo.
 
+    La distancia y el angulo percibidos incluyen ruido gaussiano
+    (config.FARMING_SENSOR_DISTANCE_NOISE_STD / FARMING_SENSOR_ANGLE_NOISE_STD),
+    modelando la imprecision de un sensor real: el borde de deteccion queda
+    "difuso" en vez de un corte perfecto, y la direccion percibida no es
+    exacta. La oclusion de vision usa las posiciones reales (es un hecho
+    fisico, no una medicion con error).
+
     Args:
         robot_pos:     Posicion [x, y] del robot (m).
         robot_theta:   Orientacion del robot (rad).
@@ -280,14 +287,17 @@ def _detect_influence_farming(
                        ocluir la vision hacia el objetivo.
 
     Returns:
-        distance : Distancia real al objetivo (m).
-        angle    : Angulo hacia el objetivo (rad).
+        distance : Distancia percibida al objetivo (m), con ruido de sensor.
+        angle    : Angulo percibido hacia el objetivo (rad), con ruido de sensor.
         detected : 1 si detectado, 0 si no.
     """
-    dx       = float(target_pos[0]) - robot_pos[0]
-    dy       = float(target_pos[1]) - robot_pos[1]
-    distance = math.sqrt(dx ** 2 + dy ** 2)
-    angle    = wrap_angle(math.atan2(dy, dx))
+    dx            = float(target_pos[0]) - robot_pos[0]
+    dy            = float(target_pos[1]) - robot_pos[1]
+    true_distance = math.sqrt(dx ** 2 + dy ** 2)
+    true_angle    = wrap_angle(math.atan2(dy, dx))
+
+    distance = max(0.0, true_distance + np.random.normal(0.0, config.FARMING_SENSOR_DISTANCE_NOISE_STD))
+    angle    = wrap_angle(true_angle + np.random.normal(0.0, config.FARMING_SENSOR_ANGLE_NOISE_STD))
 
     beta   = wrap_angle(angle - robot_theta)
     gamma  = wrap_angle(robot_theta - angle)
@@ -631,7 +641,7 @@ def run(
         desired_thetas   = np.zeros(individuals)
 
         for i in range(individuals):
-            noise        = abs(np.random.normal(0.0, 0.005))
+            noise        = np.random.normal(0.0, config.FARMING_ACTUATOR_NOISE_STD)
             theta_before = C[i, 3]
 
             walls    = detect_walls(C[i, :2], r_repulsion, area_limits)
