@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[codz]
+*$py.class
+*.so
+
+# Entornos virtuales
+venv/
+.venv/
+env/
+ENV/
+
+# Distribución / empaquetado
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Herramientas de tipado / linting / cobertura
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Salidas del simulador (reportes y video generados por single_run/statistical_run/animate_farming)
+*.npy
+*.mp4
+farming_report.npy
+farming_objects_report.npy
+farming_metrics_report.npy
+farming_running_mean.npy
+farming_final_mean.npy
+
+# Editores / IDEs
+.vscode/
+.idea/
+*.swp
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
