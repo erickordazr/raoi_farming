@@ -91,9 +91,9 @@ MOTOR_Ks: float = 2.745             # Ganancia de velocidad (rad / s·N·m)
 MOTOR_Kl: float = 1460.2705         # Ganancia de corriente (rad / s·V)
 
 VOLTAGE: dict = {
-    "repulsion":   2.0,   # ~15 cm/s
-    "orientation": 2.7,   # ~20 cm/s
-    "attraction":  3.7,   # ~30 cm/s
+    "repulsion":   1.272,   # ~0.6 m/s (robot escalado x6)
+    "orientation": 1.908,   # ~0.9 m/s (robot escalado x6)
+    "attraction":  2.545,   # ~1.2 m/s (robot escalado x6)
 }
 """
 Voltajes de referencia por estado RAOI (V).
@@ -103,13 +103,21 @@ en función de la distancia normalizada a la fuente.
 """
 
 # ── Límites físicos del robot ──────────────────────────────────────────────────
-#
-# Nota: farming escala V_MAX_LINEAR por FARMING_ROBOT_SCALE (ver farming.run(),
-# pasado como override a dynamics.integrate_robot). OMEGA_MAX se deja sin
-# escalar a propósito (ver docstring de FARMING_ROBOT_SCALE).
 
 OMEGA_MAX: float    = 10.0   # Velocidad angular máxima (rad/s)
 V_MAX_LINEAR: float = 0.5    # Velocidad lineal máxima (m/s), base (sin escalar)
+
+FARMING_MAX_SPEED: float = 1.2
+"""
+Velocidad lineal máxima del robot de farming (m/s), tope deliberado.
+
+No se deriva de V_MAX_LINEAR*escala (eso daría 3.0 m/s, muy por encima de
+lo que la física real alcanza). Se calibró junto con VOLTAGE para que el
+rango de velocidades reales del robot escalado (x6) quede entre 0.6 y
+1.2 m/s: repulsion≈0.6, orientation≈0.9, attraction≈1.2 m/s. Este tope
+es la cota de seguridad que ademas coincide con el maximo real a
+voltaje 'attraction'.
+"""
 
 # ── Controlador de giro proporcional ─────────────────────────────────────────
 
@@ -219,10 +227,12 @@ El robot de farming es más grande que un robot miniatura de laboratorio,
 así que sus propiedades físicas se escalan como un sólido uniforme:
 dimensiones lineales (ROBOT_D, ROBOT_WHEEL_R, ROBOT_WHEEL_SEP,
 ROBOT_BODY_RADIUS) por FARMING_ROBOT_SCALE; masa por
-FARMING_ROBOT_SCALE**3; inercia por FARMING_ROBOT_SCALE**5. La velocidad
-lineal máxima también escala (V_MAX_LINEAR por FARMING_ROBOT_SCALE, ver
-dynamics.integrate_robot) porque una rueda más grande recorre más
-distancia por vuelta a la misma velocidad angular del motor.
+FARMING_ROBOT_SCALE**3; inercia por FARMING_ROBOT_SCALE**5.
+
+La velocidad lineal máxima NO se deriva de este factor — se calibró
+aparte como un tope deliberado (ver FARMING_MAX_SPEED) junto con VOLTAGE,
+para que el rango real de velocidades del robot escalado quede entre 0.6
+y 1.2 m/s.
 
 Los parámetros del motor (MOTOR_Ts/Ks/Kl) y OMEGA_MAX no se escalan: no
 hay una regla geométrica que los derive del factor de escala, y
@@ -230,9 +240,9 @@ escalarlos sin datos reales del motor sería inventar números. Si el
 robot físico usa otro motor, sus constantes se ajustan aparte con datos
 reales de ese motor.
 
-dynamics.DynamicsConstants y dynamics.integrate_robot aceptan estos
-valores como overrides opcionales (ver sus firmas): si no se pasan,
-usan los valores base de ROBOT_*/V_MAX_LINEAR de este archivo.
+dynamics.DynamicsConstants acepta estos valores como overrides opcionales
+(ver su firma): si no se pasan, usa los valores base de ROBOT_* de este
+archivo.
 """
 
 # ── Comportamiento emergente ─────────────────────────────────────────────────────

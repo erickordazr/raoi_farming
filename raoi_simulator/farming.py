@@ -480,7 +480,7 @@ def run(
     # ── Robot físico escalado ──────────────────────────────────────────────────
     scale        = config.FARMING_ROBOT_SCALE
     body_radius  = config.ROBOT_BODY_RADIUS * scale
-    farming_v_max = config.V_MAX_LINEAR * scale
+    farming_v_max = config.FARMING_MAX_SPEED
     dyn = DynamicsConstants(
         mass      = config.ROBOT_MASS      * scale ** 3,
         inertia   = config.ROBOT_INERTIA   * scale ** 5,
@@ -489,8 +489,9 @@ def run(
         wheel_sep = config.ROBOT_WHEEL_SEP * scale,
         # Motor (Ts/Ks/Kl) NO se escala — sin datos reales del motor del
         # robot grande, escalarlo seria inventar numeros. OMEGA_MAX tampoco
-        # (ver docstring de config.FARMING_ROBOT_SCALE); V_MAX_LINEAR si se
-        # escala (farming_v_max), pasado como override a integrate_robot().
+        # (ver docstring de config.FARMING_ROBOT_SCALE). La velocidad maxima
+        # (farming_v_max) es un tope calibrado aparte, no derivado de la
+        # escala — ver config.FARMING_MAX_SPEED.
     )
 
     # ── Parametros ────────────────────────────────────────────────────────────
