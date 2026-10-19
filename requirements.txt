@@ -1,0 +1,4 @@
+numpy>=1.24          # cálculo numérico, estado del enjambre y generadores aleatorios
+pygame>=2.1.3        # animación de la simulación (ventana o cuadros para el video)
+opencv-python>=4.7   # escritura del video mp4
+tqdm>=4.65           # barras de progreso en single_run() y statistical_run()

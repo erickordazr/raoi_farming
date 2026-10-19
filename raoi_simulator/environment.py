@@ -1,21 +1,15 @@
-# -*- coding: utf-8 -*-
-"""
-Entorno de simulación: detección de paredes y gestión del escenario.
+"""Entorno de simulación: paredes del área, parcelas y oclusión de la vista.
 
-Las paredes se tratan como fuentes de repulsión virtual — sus puntos más
-cercanos se añaden a la misma lista que los vecinos repulsivos del robot,
-lo que garantiza consistencia con el modelo RAOI sin lógica especial.
-
-Para añadir elementos al entorno (obstáculos estáticos, zonas objetivo,
-fuentes de influencia múltiples): agregar funciones aquí. La simulación
-principal solo necesita llamar estas funciones y pasar los resultados
-al módulo behavior.
+Las paredes y las parcelas cercanas se devuelven como puntos (el punto más
+cercano de cada una), en el mismo formato que la posición de un vecino
+repulsivo, para que behavior.repulsion_vector() los trate igual.
 
 Autores: Erick Ordaz-Rivas <erick.ordazrv@uanl.edu.mx>
          FIME — Universidad Autónoma de Nuevo León
 """
 
 import math
+
 import numpy as np
 
 
@@ -24,8 +18,7 @@ def detect_walls(
     repulsion_radius: float,
     area_limits: float,
 ) -> list:
-    """
-    Detecta las paredes del área dentro del radio de repulsión.
+    """Detecta las paredes del área dentro del radio de repulsión.
 
     Devuelve los puntos más cercanos de cada pared detectada como posiciones
     virtuales, idénticas en formato a las posiciones de robots vecinos. Esto
@@ -64,8 +57,7 @@ def detect_plots(
     plots: list,
     repulsion_radius: float,
 ) -> list:
-    """
-    Detecta los segmentos de parcela dentro del radio de repulsión.
+    """Detecta los segmentos de parcela dentro del radio de repulsión.
 
     Cada parcela es un segmento horizontal definido por sus dos extremos
     (x0, y_plot) → (x1, y_plot). Para cada segmento se calcula el punto
@@ -103,3 +95,49 @@ def detect_plots(
             plot_points.append([cx, cy])
 
     return plot_points
+
+
+def segment_blocked_by_plots(
+    pos_a: np.ndarray,
+    pos_b: np.ndarray,
+    plots: list,
+) -> bool:
+    """Verifica si alguna parcela intersecta la línea entre dos puntos.
+
+    Las parcelas son barreras físicas: bloquean la línea de visión entre
+    dos puntos igual que una pared real bloquearía la vista entre dos
+    personas a lados opuestos — sea que esos dos puntos sean un robot y un
+    objetivo (objeto/nest), o dos robots entre sí. Dado que las parcelas
+    son segmentos horizontales (y constante), la intersección se resuelve
+    analíticamente en O(1) por parcela:
+      t = (y_plot - a.y) / (b.y - a.y)
+      x_cross = a.x + t * (b.x - a.x)
+      Bloqueado si t está en (0,1) y x_cross en [x0, x1].
+
+    Simétrica en pos_a/pos_b — no importa cuál de los dos puntos se pase
+    primero.
+
+    Args:
+        pos_a: Posición [x, y] de un extremo de la línea a verificar (m).
+        pos_b: Posición [x, y] del otro extremo (m).
+        plots: Lista de dicts {'x0', 'x1', 'y'} con los segmentos de parcela.
+
+    Returns:
+        True si alguna parcela bloquea la línea entre pos_a y pos_b.
+    """
+    ax, ay = float(pos_a[0]), float(pos_a[1])
+    bx, by = float(pos_b[0]), float(pos_b[1])
+    dy     = by - ay
+
+    if abs(dy) < 1e-9:
+        return False   # misma Y, ningun segmento horizontal bloquea
+
+    for plot in plots:
+        yp = float(plot["y"])
+        if (ay < yp < by) or (by < yp < ay):
+            t       = (yp - ay) / dy
+            x_cross = ax + t * (bx - ax)
+            if float(plot["x0"]) <= x_cross <= float(plot["x1"]):
+                return True
+
+    return False

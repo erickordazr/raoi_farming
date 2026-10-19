@@ -1,46 +1,99 @@
-# Python
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[codz]
 *$py.class
 *.so
+*.pyd
 
-# Entornos virtuales
+# ── Entornos virtuales y conda ────────────────────────────────────────────────
 venv/
 .venv/
 env/
 ENV/
+.conda/
+.python-version
 
-# Distribución / empaquetado
+# ── Distribución / empaquetado ────────────────────────────────────────────────
 build/
 dist/
 *.egg-info/
 .eggs/
+pip-wheel-metadata/
 
-# Herramientas de tipado / linting / cobertura
+# ── Herramientas de tipado, linting, pruebas y cobertura ─────────────────────
 .mypy_cache/
+.dmypy.json
+dmypy.json
 .ruff_cache/
 .pytest_cache/
+.hypothesis/
+.tox/
+.nox/
 htmlcov/
 .coverage
 .coverage.*
+coverage.xml
+*.prof
 
-# Jupyter
+# ── Jupyter ───────────────────────────────────────────────────────────────────
 .ipynb_checkpoints/
 
-# Salidas del simulador (reportes y video generados por single_run/statistical_run/animate_farming)
+# ── Salidas del simulador ─────────────────────────────────────────────────────
+# Reportes de single_run() / statistical_run() y videos de animate_farming().
 *.npy
+*.npz
+!tests/data/*.npz
 *.mp4
-farming_report.npy
-farming_objects_report.npy
-farming_metrics_report.npy
-farming_running_mean.npy
-farming_final_mean.npy
+*.avi
+*.mov
+*.mkv
+*.webm
+*.gif
 
-# Editores / IDEs
+# Capturas, figuras y tablas de resultados.
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.pdf
+*.csv
+*.xlsx
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.mat
+results/
+outputs/
+figures/
+# Las figuras de la documentación sí se versionan.
+!docs/**
+
+# Registros y temporales.
+*.log
+*.tmp
+*.bak
+*.orig
+*~
+
+# ── Notas y documentos personales (no se publican) ───────────────────────────
+_local/
+
+# ── Editores / IDEs ───────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
+*.swo
+.spyderproject
+.spyproject/
 
-# Sistema operativo
+# ── Sistema operativo ─────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+~$*
+
+# Carpeta de salidas de Claude
+Claude outputs/

@@ -1,24 +1,51 @@
-# -*- coding: utf-8 -*-
-"""
+"""Menú interactivo del simulador RAOI de farming.
 
 Ejecutar con:
     python main.py
 
-O desde código externo:
-    from raoi_simulator.farming import single_run, statistical_run
-
-    report, objects_report, metrics = single_run(
-        n_objects=10, n_plots=3, individuals=15,
-        r_r=0.1, o_r=0.5, a_r=1.5,
-        animation=True,
-    )
+Desde código, ver raoi_simulator.farming: run(), single_run() y
+statistical_run().
 """
+
+import logging
 
 from raoi_simulator.farming import single_run as farm_single, statistical_run as farm_stat
 
+OPTION_SINGLE, OPTION_STATS, OPTION_EXIT = 1, 2, 3
+
+
+def _run_option(choice: int) -> bool:
+    """Ejecuta la opción elegida del menú.
+
+    Args:
+        choice: Opción del menú.
+
+    Returns:
+        True si el menú debe terminar; False si hay que volver a preguntar.
+    """
+    if choice == OPTION_SINGLE:
+        farm_single()
+        return True
+    if choice == OPTION_STATS:
+        try:
+            replicas = int(input("Number of replicas: "))
+        except ValueError:
+            print("Invalid number.")
+            return False
+        if replicas < 1:
+            print("Enter at least 1 replica.")
+            return False
+        farm_stat(replicas)
+        return True
+    if choice == OPTION_EXIT:
+        return True
+    print("Invalid option. Choose 1–3.")
+    return False
+
 
 def main() -> None:
-    """Menú interactivo del simulador RAOI — solo Farming."""
+    """Muestra el menú y ejecuta una simulación individual o una tanda de réplicas."""
+    logging.basicConfig(level=logging.INFO, format="  %(message)s")
     menu = """
     ╔══════════════════════════════════════════════════╗
     ║       RAOI Swarm Simulator — Farming             ║
@@ -37,21 +64,12 @@ def main() -> None:
             print("Please enter a number.")
             continue
 
-        if choice == 1:
-            farm_single()
+        try:
+            if _run_option(choice):
+                break
+        except ValueError as error:
+            print(f"Invalid parameters: {error}")
             break
-        elif choice == 2:
-            try:
-                replicas = int(input("Number of replicas: "))
-            except ValueError:
-                print("Invalid number.")
-                continue
-            farm_stat(replicas)
-            break
-        elif choice == 3:
-            break
-        else:
-            print("Invalid option. Choose 1–3.")
 
 
 if __name__ == "__main__":

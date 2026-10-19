@@ -1,11 +1,17 @@
-# -*- coding: utf-8 -*-
-"""
-Métricas de desempeño del enjambre RAOI para la tarea de farming.
+"""Funciones objetivo del enjambre RAOI en la tarea de farming.
 
-farming_metrics() es stateless: se calcula enteramente a partir de
-collected_objects y delivered (arrays de tamaño individuals/n_objects),
-sin recorrer el reporte completo de la simulación — así el costo de
-cómputo de las métricas es independiente del número de iteraciones.
+  f1  Balance de carga — desviación estándar de los objetos recogidos por
+      cada robot (minimizar).
+  f2  Energía promedio — energía total consumida entre el número de robots
+      (minimizar).
+  f3  Tasa de éxito — objetos entregados entre objetos disponibles
+      (maximizar).
+  f4  Costo de señalización — costo de los sensores de los robots
+      (receptores, radio r_i) más el del emisor del nest (radio r_s)
+      (minimizar).
+
+Se calculan a partir de contadores acumulados por robot y del estado final
+de los objetos, sin recorrer el reporte completo de la simulación.
 
 Referencia:
   Ordaz-Rivas et al. (2021). Autonomous foraging with a pack of robots
@@ -17,56 +23,59 @@ Autores: Erick Ordaz-Rivas <erick.ordazrv@uanl.edu.mx>
 
 import numpy as np
 
+from . import config
+
 
 def farming_metrics(
-    collected_objects: np.ndarray,
-    n_objects:         int,
-    individuals:       int,
-    delivered:         np.ndarray,
+    robot_counters: np.ndarray,
+    n_objects:      int,
+    delivered:      np.ndarray,
+    sensor_radius:  float,
+    emitter_radius: float,
 ) -> dict:
-    """
-    Calcula las métricas de desempeño de la tarea de farming: f1, f2 y f3.
+    """Calcula las cuatro funciones objetivo de la tarea de farming.
 
-      f1 — objects_per_robot (cuántos objetos recolectó cada robot) y
-           load_balance_std (desviación estándar del balance de carga;
-           0 = trabajo perfectamente balanceado entre robots).
-      f2 — energy_per_robot (+1 por iteración en búsqueda, +1.5 por
-           iteración en entrega/transporte, ya que cargar el objeto cuesta
-           más que buscarlo), total_energy y mean_energy (energía total
-           del enjambre entre el número de robots).
-      f3 — success_fraction: fracción de objetos entregados sobre el total.
+      f1 = sqrt( (1/n) * sum_i (o_i - o_mean)^2 ), con o_i los objetos
+           recogidos por el robot i.
+      f2 = (1/n) * sum_i e_i, con e_i la energía del robot i:
+           config.FARMING_ENERGY_COST_SEARCH por iteración buscando +
+           config.FARMING_ENERGY_COST_CARRY por iteración cargando.
+      f3 = o_delivered / o_total.
+      f4 = n · c_i · (r_i / r_0)^p + c_s · (r_s / r_0)^q, con c_i, c_s, p,
+           q y r_0 de config.FARMING_SIGNAL_*.
 
     Args:
-        collected_objects: Array (N, 4): [delivery_iters, search_iters,
-                           n_collected, total_iters] por robot.
-        n_objects:         Número total de objetos en el escenario.
-        individuals:       Número de robots en el enjambre.
-        delivered:         Array booleano (O,): True si el objeto fue entregado.
+        robot_counters: Array (n, 3) por robot: [iteraciones cargando,
+                        iteraciones buscando, objetos recogidos].
+        n_objects:      Número total de objetos (o_total).
+        delivered:      Array booleano (o_total,): True si el objeto fue entregado.
+        sensor_radius:  Radio sensor r_i de cada robot hacia el nest (m).
+        emitter_radius: Radio de emisión r_s del nest (m).
 
     Returns:
-        Dict con: 'objects_per_robot', 'load_balance_std' (f1),
-        'energy_per_robot', 'total_energy', 'mean_energy' (f2),
-        'delivered' (int), 'success_fraction' (f3).
+        Dict con 'load_balance' (f1), 'mean_energy' (f2), 'success_ratio' (f3)
+        y 'signaling_cost' (f4).
     """
-    n_delivered      = int(np.sum(delivered))
-    success_fraction = n_delivered / max(n_objects, 1)
+    carry_iters  = robot_counters[:, 0]
+    search_iters = robot_counters[:, 1]
+    collected    = robot_counters[:, 2]
 
-    objects_per_robot = collected_objects[:, 2].copy()
-    load_balance_std  = float(np.std(collected_objects[:, 2]))
-
-    energy_per_robot = (
-        collected_objects[:, 1] * 1.0    # iteraciones en busqueda
-        + collected_objects[:, 0] * 1.5  # iteraciones cargando (entrega)
+    energy = (
+        search_iters * config.FARMING_ENERGY_COST_SEARCH
+        + carry_iters * config.FARMING_ENERGY_COST_CARRY
     )
-    total_energy = float(np.sum(energy_per_robot))
-    mean_energy  = total_energy / max(individuals, 1)
+
+    r_0 = config.FARMING_SIGNAL_REFERENCE_RADIUS
+    signaling_cost = (
+        len(robot_counters) * config.FARMING_SIGNAL_COST_SENSOR
+        * (sensor_radius / r_0) ** config.FARMING_SIGNAL_SENSOR_EXPONENT
+        + config.FARMING_SIGNAL_COST_EMITTER
+        * (emitter_radius / r_0) ** config.FARMING_SIGNAL_EMITTER_EXPONENT
+    )
 
     return {
-        "objects_per_robot":  objects_per_robot,
-        "load_balance_std":   load_balance_std,
-        "energy_per_robot":   energy_per_robot,
-        "total_energy":       total_energy,
-        "mean_energy":        mean_energy,
-        "delivered":          n_delivered,
-        "success_fraction":   success_fraction,
+        "load_balance":   float(np.std(collected)),
+        "mean_energy":    float(np.mean(energy)),
+        "success_ratio":  int(np.sum(delivered)) / max(n_objects, 1),
+        "signaling_cost": float(signaling_cost),
     }
